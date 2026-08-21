@@ -1,8 +1,7 @@
 # FinGuard — Financial Fraud & Risk Intelligence Platform
 
-> Status: **Phase 8 — alert/case/investigation workflow.** Not yet
-> resume-ready. See [docs/architecture.md](docs/architecture.md) for the
-> full design.
+> Status: **Phase 9 — FastAPI (local/dev layer).** Not yet resume-ready.
+> See [docs/architecture.md](docs/architecture.md) for the full design.
 
 FinGuard simulates a bank/fintech fraud operations platform end to end:
 transaction ingestion → hybrid detection (rules + statistics + ML) → a
@@ -77,6 +76,7 @@ python scripts/run_statistical_detection.py  # IQR + Isolation Forest scores
 python scripts/train_models.py     # Logistic Regression + XGBoost, time-aware split
 python scripts/run_risk_scoring.py # combined risk score, tiers, financial exposure
 python scripts/run_investigation_workflow.py  # alerts, cases, simulated investigators
+uvicorn api.main:app --reload      # local API - see docs/api.md
 ```
 
 See [docs/data_generation.md](docs/data_generation.md) for how the
@@ -89,9 +89,10 @@ IQR/Isolation Forest anomaly engine,
 [docs/model_card.md](docs/model_card.md) /
 [docs/evaluation_report.md](docs/evaluation_report.md) for the supervised
 fraud model, [docs/risk_scoring.md](docs/risk_scoring.md) for the combined
-risk score, tiers, and financial exposure trade-off, and
+risk score, tiers, and financial exposure trade-off,
 [docs/investigation_workflow.md](docs/investigation_workflow.md) for the
-alert/case/investigator simulation and SLA metrics.
+alert/case/investigator simulation and SLA metrics, and
+[docs/api.md](docs/api.md) for the FastAPI endpoints.
 
 ## Data disclosure
 

@@ -15,6 +15,7 @@ streamlit==1.62.0
 plotly==6.9.0
 fastapi==0.141.1
 uvicorn==0.52.4
+httpx==0.28.1
 Faker==40.36.0
 pyarrow==18.1.0
 pytest==9.1.1
