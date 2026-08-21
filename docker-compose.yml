@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: finguard_postgres
+    environment:
+      POSTGRES_USER: finguard
+      POSTGRES_PASSWORD: finguard
+      POSTGRES_DB: finguard
+    ports:
+      - "5434:5432"
+    volumes:
+      - finguard_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finguard"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  finguard_pgdata:
