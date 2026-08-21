@@ -1,6 +1,6 @@
 # FinGuard — Financial Fraud & Risk Intelligence Platform
 
-> Status: **Phase 7 — risk scoring + financial exposure.** Not yet
+> Status: **Phase 8 — alert/case/investigation workflow.** Not yet
 > resume-ready. See [docs/architecture.md](docs/architecture.md) for the
 > full design.
 
@@ -76,6 +76,7 @@ python scripts/run_rules.py        # backfills rules_triggered
 python scripts/run_statistical_detection.py  # IQR + Isolation Forest scores
 python scripts/train_models.py     # Logistic Regression + XGBoost, time-aware split
 python scripts/run_risk_scoring.py # combined risk score, tiers, financial exposure
+python scripts/run_investigation_workflow.py  # alerts, cases, simulated investigators
 ```
 
 See [docs/data_generation.md](docs/data_generation.md) for how the
@@ -87,8 +88,10 @@ for the 7 business rules and their evaluation against ground truth,
 IQR/Isolation Forest anomaly engine,
 [docs/model_card.md](docs/model_card.md) /
 [docs/evaluation_report.md](docs/evaluation_report.md) for the supervised
-fraud model, and [docs/risk_scoring.md](docs/risk_scoring.md) for the
-combined risk score, tiers, and financial exposure trade-off.
+fraud model, [docs/risk_scoring.md](docs/risk_scoring.md) for the combined
+risk score, tiers, and financial exposure trade-off, and
+[docs/investigation_workflow.md](docs/investigation_workflow.md) for the
+alert/case/investigator simulation and SLA metrics.
 
 ## Data disclosure
 
