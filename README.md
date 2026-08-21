@@ -1,8 +1,8 @@
 # FinGuard — Financial Fraud & Risk Intelligence Platform
 
-> Status: **Phase 6 — supervised ML (Logistic Regression + XGBoost).**
-> Not yet resume-ready. See [docs/architecture.md](docs/architecture.md)
-> for the full design.
+> Status: **Phase 7 — risk scoring + financial exposure.** Not yet
+> resume-ready. See [docs/architecture.md](docs/architecture.md) for the
+> full design.
 
 FinGuard simulates a bank/fintech fraud operations platform end to end:
 transaction ingestion → hybrid detection (rules + statistics + ML) → a
@@ -75,6 +75,7 @@ python scripts/compute_features.py # populates rolling baseline tables
 python scripts/run_rules.py        # backfills rules_triggered
 python scripts/run_statistical_detection.py  # IQR + Isolation Forest scores
 python scripts/train_models.py     # Logistic Regression + XGBoost, time-aware split
+python scripts/run_risk_scoring.py # combined risk score, tiers, financial exposure
 ```
 
 See [docs/data_generation.md](docs/data_generation.md) for how the
@@ -83,10 +84,11 @@ synthetic dataset and its 9 fraud typologies are constructed,
 baseline / leakage-prevention design, [docs/rules_engine.md](docs/rules_engine.md)
 for the 7 business rules and their evaluation against ground truth,
 [docs/statistical_detection.md](docs/statistical_detection.md) for the
-IQR/Isolation Forest anomaly engine, and
+IQR/Isolation Forest anomaly engine,
 [docs/model_card.md](docs/model_card.md) /
 [docs/evaluation_report.md](docs/evaluation_report.md) for the supervised
-fraud model.
+fraud model, and [docs/risk_scoring.md](docs/risk_scoring.md) for the
+combined risk score, tiers, and financial exposure trade-off.
 
 ## Data disclosure
 
