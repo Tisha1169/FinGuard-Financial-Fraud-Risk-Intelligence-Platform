@@ -1,5 +1,3 @@
-import datetime
-import json
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -8,7 +6,10 @@ from sqlalchemy.engine import Engine
 
 from api.dependencies import db_engine, parse_rule_row
 from api.schemas import ActionRequest, AssignRequest
-from investigation.state_machine import InvalidTransitionError, apply_action, valid_actions_from
+from investigation.case_actions import CaseNotFoundError
+from investigation.case_actions import assign_case as assign_case_shared
+from investigation.case_actions import perform_action as perform_action_shared
+from investigation.state_machine import InvalidTransitionError, valid_actions_from
 
 router = APIRouter(tags=["cases"])
 
@@ -141,89 +142,24 @@ def get_case_detail(case_id: int, engine: Engine = Depends(db_engine)):
 
 @router.post("/cases/{case_id}/assign")
 def assign_case(case_id: int, body: AssignRequest, engine: Engine = Depends(db_engine)):
-    with engine.begin() as conn:
-        case_row = _fetch_case_or_404(conn, case_id)
-        now = datetime.datetime.now(datetime.timezone.utc)
-
-        conn.execute(
-            text("UPDATE investigation_cases SET assigned_investigator = :inv WHERE case_id = :cid"),
-            {"inv": body.investigator, "cid": case_id},
-        )
-        result = conn.execute(
-            text(
-                "INSERT INTO investigation_actions (case_id, action_type, performed_by, notes, performed_at) "
-                "VALUES (:cid, 'ASSIGN', :performed_by, :notes, :ts) RETURNING action_id, action_type, performed_by, notes, performed_at"
-            ),
-            {"cid": case_id, "performed_by": body.performed_by, "notes": f"assigned to {body.investigator}", "ts": now},
-        ).mappings().first()
-        conn.execute(
-            text(
-                "INSERT INTO audit_log (entity_type, entity_id, event_type, event_payload, performed_by, performed_at) "
-                "VALUES ('case', :cid, 'ASSIGN', CAST(:payload AS jsonb), :performed_by, :ts)"
-            ),
-            {"cid": str(case_id), "payload": json.dumps({"investigator": body.investigator}), "performed_by": body.performed_by, "ts": now},
-        )
-
-    return {"case_id": case_id, "assigned_investigator": body.investigator, "action": dict(result)}
+    try:
+        return assign_case_shared(engine, case_id, body.investigator, body.performed_by)
+    except CaseNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
 
 
 @router.post("/cases/{case_id}/action")
 def perform_case_action(case_id: int, body: ActionRequest, engine: Engine = Depends(db_engine)):
     """Applies a status-transitioning action (INVESTIGATE, ESCALATE,
     CONFIRM_FRAUD, MARK_FALSE_POSITIVE, CLOSE) - validated against
-    investigation/state_machine.py so an invalid transition (e.g. closing
-    an OPEN case directly) is rejected with a clear error rather than
-    silently corrupting case state.
+    investigation/state_machine.py (via investigation/case_actions.py,
+    shared with streamlit_app's investigation queue - see that module's
+    docstring for why) so an invalid transition is rejected with a clear
+    error rather than silently corrupting case state.
     """
-    with engine.begin() as conn:
-        case_row = _fetch_case_or_404(conn, case_id)
-        current_status = case_row["status"]
-
-        try:
-            new_status = apply_action(current_status, body.action_type)
-        except InvalidTransitionError as exc:
-            raise HTTPException(status_code=409, detail=str(exc))
-
-        now = datetime.datetime.now(datetime.timezone.utc)
-        is_resolution = body.action_type in {"CONFIRM_FRAUD", "MARK_FALSE_POSITIVE"}
-        is_close = body.action_type == "CLOSE"
-
-        update_fields = {"status": new_status}
-        set_clauses = ["status = :status"]
-        if is_resolution:
-            set_clauses.append("resolution = :resolution")
-            update_fields["resolution"] = new_status  # CONFIRMED_FRAUD or FALSE_POSITIVE
-        if is_close:
-            set_clauses.append("resolved_at = :resolved_at")
-            update_fields["resolved_at"] = now
-
-        update_fields["cid"] = case_id
-        conn.execute(
-            text(f"UPDATE investigation_cases SET {', '.join(set_clauses)} WHERE case_id = :cid"),
-            update_fields,
-        )
-
-        result = conn.execute(
-            text(
-                "INSERT INTO investigation_actions (case_id, action_type, performed_by, notes, performed_at) "
-                "VALUES (:cid, :action_type, :performed_by, :notes, :ts) "
-                "RETURNING action_id, action_type, performed_by, notes, performed_at"
-            ),
-            {"cid": case_id, "action_type": body.action_type, "performed_by": body.performed_by, "notes": body.notes, "ts": now},
-        ).mappings().first()
-        conn.execute(
-            text(
-                "INSERT INTO audit_log (entity_type, entity_id, event_type, event_payload, performed_by, performed_at) "
-                "VALUES ('case', :cid, :event_type, CAST(:payload AS jsonb), :performed_by, :ts)"
-            ),
-            {
-                "cid": str(case_id), "event_type": body.action_type,
-                "payload": json.dumps({"previous_status": current_status, "new_status": new_status, "notes": body.notes}),
-                "performed_by": body.performed_by, "ts": now,
-            },
-        )
-
-    return {
-        "case_id": case_id, "previous_status": current_status, "new_status": new_status,
-        "action": dict(result),
-    }
+    try:
+        return perform_action_shared(engine, case_id, body.action_type, body.performed_by, body.notes)
+    except CaseNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except InvalidTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))

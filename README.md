@@ -1,6 +1,6 @@
 # FinGuard — Financial Fraud & Risk Intelligence Platform
 
-> Status: **Phase 9 — FastAPI (local/dev layer).** Not yet resume-ready.
+> Status: **Phase 10 — Streamlit analyst console.** Not yet resume-ready.
 > See [docs/architecture.md](docs/architecture.md) for the full design.
 
 FinGuard simulates a bank/fintech fraud operations platform end to end:
@@ -77,6 +77,7 @@ python scripts/train_models.py     # Logistic Regression + XGBoost, time-aware s
 python scripts/run_risk_scoring.py # combined risk score, tiers, financial exposure
 python scripts/run_investigation_workflow.py  # alerts, cases, simulated investigators
 uvicorn api.main:app --reload      # local API - see docs/api.md
+streamlit run streamlit_app/app.py # analyst console - see docs/dashboard.md
 ```
 
 See [docs/data_generation.md](docs/data_generation.md) for how the
@@ -91,8 +92,9 @@ IQR/Isolation Forest anomaly engine,
 fraud model, [docs/risk_scoring.md](docs/risk_scoring.md) for the combined
 risk score, tiers, and financial exposure trade-off,
 [docs/investigation_workflow.md](docs/investigation_workflow.md) for the
-alert/case/investigator simulation and SLA metrics, and
-[docs/api.md](docs/api.md) for the FastAPI endpoints.
+alert/case/investigator simulation and SLA metrics,
+[docs/api.md](docs/api.md) for the FastAPI endpoints, and
+[docs/dashboard.md](docs/dashboard.md) for the Streamlit analyst console.
 
 ## Data disclosure
 
