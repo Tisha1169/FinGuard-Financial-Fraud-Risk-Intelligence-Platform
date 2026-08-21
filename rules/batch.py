@@ -21,7 +21,7 @@ from rules import config
 from rules.severity import severity_for_ratio
 
 
-def _load_transactions(engine: Engine) -> pd.DataFrame:
+def load_transactions(engine: Engine) -> pd.DataFrame:
     df = pd.read_sql(
         """
         SELECT t.transaction_id, t.customer_id, t.merchant_id, t.device_id, t.location_id,
@@ -42,7 +42,8 @@ def _load_transactions(engine: Engine) -> pd.DataFrame:
 
 def _load_daily_metrics(engine: Engine) -> tuple[pd.DataFrame, pd.DataFrame]:
     customer_daily = pd.read_sql(
-        "SELECT customer_id, metric_date, txn_amount_avg_90d, txn_amount_stddev_90d FROM fact_customer_daily_metrics",
+        "SELECT customer_id, metric_date, txn_amount_avg_90d, txn_amount_stddev_90d, "
+        "distinct_merchants_30d, distinct_devices_30d FROM fact_customer_daily_metrics",
         engine,
     )
     merchant_daily = pd.read_sql(
@@ -93,7 +94,7 @@ def _asof_join_merchant_baseline(txns: pd.DataFrame, merchant_daily: pd.DataFram
 
 
 def build_batch_features(engine: Engine) -> pd.DataFrame:
-    txns = _load_transactions(engine)
+    txns = load_transactions(engine)
     customer_daily, merchant_daily = _load_daily_metrics(engine)
 
     df = _asof_join_customer_baseline(txns, customer_daily)
