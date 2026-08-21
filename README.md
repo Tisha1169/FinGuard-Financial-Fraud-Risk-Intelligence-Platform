@@ -1,6 +1,6 @@
 # FinGuard — Financial Fraud & Risk Intelligence Platform
 
-> Status: **Phase 2 — synthetic data generation.** Not yet resume-ready.
+> Status: **Phase 3 — SQL feature engineering.** Not yet resume-ready.
 > See [docs/architecture.md](docs/architecture.md) for the full design.
 
 FinGuard simulates a bank/fintech fraud operations platform end to end:
@@ -70,10 +70,13 @@ pip install -r requirements.txt
 python scripts/init_db.py
 python scripts/generate_data.py   # writes data/*.parquet
 python scripts/load_data.py       # loads them into DATABASE_URL
+python scripts/compute_features.py # populates rolling baseline tables
 ```
 
 See [docs/data_generation.md](docs/data_generation.md) for how the
-synthetic dataset and its 9 fraud typologies are constructed.
+synthetic dataset and its 9 fraud typologies are constructed, and
+[docs/feature_engineering.md](docs/feature_engineering.md) for the rolling
+baseline / leakage-prevention design.
 
 ## Data disclosure
 
