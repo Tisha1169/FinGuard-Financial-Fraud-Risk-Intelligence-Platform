@@ -1,9 +1,21 @@
+# What the DEPLOYED app (streamlit_app/app.py) actually imports at
+# runtime - kept lean deliberately. pyarrow, pytest, and pytest-cov are
+# NOT here even though they're used elsewhere in this repo (pyarrow by
+# scripts/generate_data.py + load_data.py for local parquet I/O; pytest
+# by the test suite) - neither is imported by any code path the deployed
+# app runs (it reads/writes Postgres only, never touches parquet files).
+# See requirements-dev.txt for those. This split is what fixed a real
+# Streamlit Community Cloud deploy failure: pyarrow had no prebuilt wheel
+# for the Python version Streamlit Cloud's build used, and building it
+# from source failed (missing cmake in their sandbox) - removing an
+# unused dependency was a cleaner fix than fighting Python-version pins.
+#
 # Minimum-version bounds (not exact pins) for the heavy ML libraries -
 # exact pins were originally verified only against a local bleeding-edge
 # Python 3.13/macOS-arm64 setup and some (e.g. pandas 3.0.x) are new
-# enough that Streamlit Community Cloud's build image may not have a
-# prebuilt wheel yet. Letting pip resolve within these bounds picks
-# whatever wheel-available version fits the actual deploy environment.
+# enough that a given build image may not have a prebuilt wheel yet.
+# Letting pip resolve within these bounds picks whatever wheel-available
+# version fits the actual deploy environment.
 pandas>=2.2,<3.1
 numpy>=1.26,<3.0
 scipy>=1.13,<2.0
@@ -23,6 +35,3 @@ fastapi==0.141.1
 uvicorn==0.52.4
 httpx==0.28.1
 Faker==40.36.0
-pyarrow>=14.0,<20.0
-pytest==9.1.1
-pytest-cov==7.1.0

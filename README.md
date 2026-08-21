@@ -68,7 +68,7 @@ scripts/           one-off / setup scripts (e.g. init_db.py)
 cp .env.example .env
 docker compose up -d
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt   # dev adds pyarrow (data scripts) + pytest
 python scripts/init_db.py
 python scripts/generate_data.py   # writes data/*.parquet
 python scripts/load_data.py       # loads them into DATABASE_URL

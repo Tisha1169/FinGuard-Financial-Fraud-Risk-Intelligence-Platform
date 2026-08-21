@@ -1,0 +1,11 @@
+# Local-development-only additions on top of requirements.txt - never
+# needed by the deployed Streamlit app, so kept out of requirements.txt
+# (which Streamlit Community Cloud installs verbatim).
+#
+# Install both for local dev:
+#   pip install -r requirements.txt -r requirements-dev.txt
+-r requirements.txt
+
+pyarrow>=14.0,<20.0   # scripts/generate_data.py + load_data.py: local parquet I/O
+pytest==9.1.1
+pytest-cov==7.1.0

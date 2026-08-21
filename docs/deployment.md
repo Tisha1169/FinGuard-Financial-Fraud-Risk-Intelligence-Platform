@@ -13,8 +13,10 @@ authorization aren't things I do on your behalf.
   (`fact_transactions` 37 MB, `fact_customer_daily_metrics` 19 MB,
   `risk_scores` 11 MB, rest smaller) - comfortably within Neon's free-tier
   storage allowance. No trimming needed.
-- **Clean-install verification:** `requirements.txt` installs from
-  scratch into a brand-new virtualenv with no errors (~25s), and every
+- **Clean-install verification:** `requirements.txt` (the lean,
+  deployed-app-only set - see "Real deploy incident" below for why
+  `pyarrow`/`pytest` live in `requirements-dev.txt` instead) installs
+  from scratch into a brand-new virtualenv with no errors, and every
   package (`pandas`, `xgboost`, `shap`, `streamlit`, `sqlalchemy`,
   `psycopg2-binary`, etc.) imports cleanly afterward - this is exactly
   what Streamlit Community Cloud's build step will do.
@@ -96,8 +98,55 @@ Once live, check:
   confirm it doesn't error (confirms write access to Neon works, not
   just read).
 
+## Real deploy incident: `pyarrow` build failure (found and fixed)
+
+The first two live deploy attempts failed with `installer returned a
+non-zero exit code`. The full build log (Streamlit truncates this in its
+default summary view - expand "Manage app" to see it) showed the actual
+cause: Streamlit Community Cloud's build used **Python 3.14**, and
+`pyarrow` had no prebuilt wheel available in the specific version range
+this repo's `requirements.txt` allowed, so pip fell back to compiling it
+from source - which needs `cmake`, missing from Streamlit's build
+sandbox, so the build failed outright.
+
+Two fix attempts, in order:
+1. Added `runtime.txt` pinning Python 3.11 - **did not take effect**; a
+   reboot/push still built against Python 3.14. (Streamlit Cloud may only
+   read `runtime.txt` at initial app creation, not on every rebuild - if
+   you hit this, check the app's own Advanced Settings for an explicit
+   Python-version selector rather than relying on the file alone.)
+2. **Root cause, actually fixed:** `pyarrow` isn't used anywhere in the
+   deployed app's own code (`streamlit_app/`, `api/`, `models/`,
+   `risk_scoring/`, `investigation/`, `rules/`, `features/`, `database/` -
+   verified by grep) - it's only needed by `scripts/generate_data.py`/
+   `load_data.py` for local parquet I/O, neither of which the deployed
+   app ever runs. But it's *also* an unavoidable transitive dependency of
+   Streamlit itself (`streamlit==1.62.0` requires
+   `pyarrow>=7.0,!=25.0.0,<26`) - so simply removing it from
+   `requirements.txt` wasn't enough on its own; the real bug was that an
+   earlier fix attempt had **capped** `pyarrow<20.0` in this repo's own
+   requirements, which forced pip toward exactly the old,
+   cp314-incompatible versions instead of letting it resolve to whatever
+   recent version (with an available wheel) actually satisfies
+   Streamlit's own constraint. Removing that artificial cap entirely -
+   splitting `pyarrow` out into `requirements-dev.txt` (local-only, for
+   the data-generation scripts) and leaving `requirements.txt` with no
+   `pyarrow` line at all - let pip resolve Streamlit's transitive
+   dependency freely; verified locally that this correctly resolves to
+   `pyarrow==25.0.1` rather than being pinned down to an old range.
+
+**Lesson for future changes to `requirements.txt`:** don't cap versions
+of packages that are also hard dependencies of something else in the
+file (like Streamlit's `pyarrow` requirement) unless you've confirmed the
+cap doesn't conflict with what that package actually needs - an
+over-cautious pin can be worse than no pin at all.
+
 ## Troubleshooting
 
+- **Build fails with a `pyarrow`/`cmake` error:** see the incident above -
+  should already be fixed by the current `requirements.txt`/`requirements-dev.txt`
+  split, but if it recurs, check whether anything reintroduced a capped
+  `pyarrow` version constraint.
 - **Build fails with an XGBoost/libomp error:** Streamlit Community Cloud
   supports an `apt.txt` or `packages.txt` file at the repo root listing
   system packages to install before the Python build - add `libgomp1` if
@@ -113,9 +162,10 @@ Once live, check:
   put the app to sleep after inactivity and is cold-starting again
   (free-tier apps sleep after a period of no traffic) - not a bug.
 
-## Local development (unchanged)
+## Local development
 
 ```bash
+pip install -r requirements.txt -r requirements-dev.txt   # dev adds pyarrow + pytest
 docker compose up -d
 python scripts/init_db.py
 # ... same pipeline scripts as above, against local DATABASE_URL in .env
