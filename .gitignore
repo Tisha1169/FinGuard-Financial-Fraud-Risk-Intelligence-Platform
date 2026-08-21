@@ -10,6 +10,7 @@ env/
 data/*.csv
 data/*.parquet
 !data/.gitkeep
+artifacts/
 .streamlit/secrets.toml
 .DS_Store
 .pytest_cache/
