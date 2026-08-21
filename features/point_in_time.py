@@ -116,6 +116,86 @@ def is_new_location(engine: Engine, customer_id: int, location_id: int, as_of_ts
         ).first() is None
 
 
+def get_last_transaction_location(engine: Engine, customer_id: int, as_of_ts) -> dict | None:
+    """Most recent transaction's location/time strictly before as_of_ts -
+    used by the geographic-inconsistency rule to compute implied travel
+    speed between consecutive transactions.
+    """
+    query = text(
+        """
+        SELECT t.location_id, t.transaction_ts, l.latitude, l.longitude
+        FROM fact_transactions t
+        JOIN dim_location l ON l.location_id = t.location_id
+        WHERE t.customer_id = :cid AND t.transaction_ts < :as_of_ts
+        ORDER BY t.transaction_ts DESC
+        LIMIT 1
+        """
+    )
+    with engine.connect() as conn:
+        row = conn.execute(query, {"cid": customer_id, "as_of_ts": as_of_ts}).mappings().first()
+    return dict(row) if row else None
+
+
+def count_recent_failed_transactions(engine: Engine, customer_id: int, as_of_ts, window_minutes: int) -> int:
+    """FAILED-status transactions strictly before as_of_ts within the
+    trailing window - evidence for the failed-then-large rule.
+    """
+    query = text(
+        """
+        SELECT COUNT(*) FROM fact_transactions
+        WHERE customer_id = :cid
+          AND status = 'FAILED'
+          AND transaction_ts < :as_of_ts
+          AND transaction_ts >= CAST(:as_of_ts AS timestamptz) - (CAST(:window_minutes AS text) || ' minutes')::interval
+        """
+    )
+    with engine.connect() as conn:
+        return conn.execute(
+            query, {"cid": customer_id, "as_of_ts": as_of_ts, "window_minutes": window_minutes}
+        ).scalar()
+
+
+def get_hour_history(engine: Engine, customer_id: int, as_of_ts) -> dict:
+    """How often (if ever) this customer has transacted at this hour of
+    day, strictly before as_of_ts - evidence for the off-hours rule.
+    """
+    hour = as_of_ts.hour
+    query = text(
+        """
+        SELECT
+            COUNT(*) FILTER (WHERE EXTRACT(HOUR FROM transaction_ts) = :hour) AS txns_at_this_hour,
+            COUNT(*) AS total_prior_txns
+        FROM fact_transactions
+        WHERE customer_id = :cid AND transaction_ts < :as_of_ts
+        """
+    )
+    with engine.connect() as conn:
+        row = conn.execute(query, {"cid": customer_id, "as_of_ts": as_of_ts, "hour": hour}).mappings().first()
+    return dict(row) if row else {"txns_at_this_hour": 0, "total_prior_txns": 0}
+
+
+def get_merchant_first_time_for_customer(engine: Engine, customer_id: int, merchant_id: int, as_of_ts) -> bool:
+    """True if the customer has never transacted at this merchant before."""
+    query = text(
+        """
+        SELECT 1 FROM fact_transactions
+        WHERE customer_id = :cid AND merchant_id = :mid AND transaction_ts < :as_of_ts
+        LIMIT 1
+        """
+    )
+    with engine.connect() as conn:
+        return conn.execute(
+            query, {"cid": customer_id, "mid": merchant_id, "as_of_ts": as_of_ts}
+        ).first() is None
+
+
+def get_location_latlon(engine: Engine, location_id: int) -> dict | None:
+    query = text("SELECT latitude, longitude FROM dim_location WHERE location_id = :lid")
+    with engine.connect() as conn:
+        row = conn.execute(query, {"lid": location_id}).mappings().first()
+    return dict(row) if row else None
+
+
 def compute_transaction_features(engine: Engine, transaction: dict) -> dict:
     """Assembles the full point-in-time feature set for one transaction.
 
@@ -128,6 +208,9 @@ def compute_transaction_features(engine: Engine, transaction: dict) -> dict:
     customer_baseline = get_customer_baseline_asof(engine, cid, as_of_ts)
     merchant_baseline = get_merchant_baseline_asof(engine, transaction["merchant_id"], as_of_ts)
     intraday = get_intraday_activity(engine, cid, as_of_ts)
+    last_location = get_last_transaction_location(engine, cid, as_of_ts)
+    hour_history = get_hour_history(engine, cid, as_of_ts)
+    current_latlon = get_location_latlon(engine, transaction["location_id"])
 
     amount_zscore = None
     if customer_baseline and customer_baseline["txn_amount_stddev_90d"]:
@@ -150,7 +233,17 @@ def compute_transaction_features(engine: Engine, transaction: dict) -> dict:
         ),
         "txn_count_last_10min": count_recent_transactions(engine, cid, as_of_ts, 10),
         "txn_count_last_60min": count_recent_transactions(engine, cid, as_of_ts, 60),
+        "recent_failed_count_15min": count_recent_failed_transactions(engine, cid, as_of_ts, 15),
         "is_new_device": is_new_device(engine, cid, transaction["device_id"], as_of_ts),
         "is_new_location": is_new_location(engine, cid, transaction["location_id"], as_of_ts),
+        "is_first_time_at_merchant": get_merchant_first_time_for_customer(engine, cid, transaction["merchant_id"], as_of_ts),
+        "last_location_id": last_location["location_id"] if last_location else None,
+        "last_location_lat": float(last_location["latitude"]) if last_location else None,
+        "last_location_lon": float(last_location["longitude"]) if last_location else None,
+        "last_txn_ts_any": last_location["transaction_ts"] if last_location else None,
+        "current_location_lat": float(current_latlon["latitude"]) if current_latlon else None,
+        "current_location_lon": float(current_latlon["longitude"]) if current_latlon else None,
+        "txns_at_this_hour": hour_history["txns_at_this_hour"],
+        "total_prior_txns": hour_history["total_prior_txns"],
         "has_sufficient_history": customer_baseline is not None,
     }

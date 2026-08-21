@@ -160,7 +160,10 @@ def test_compute_transaction_features_returns_all_expected_keys(engine):
         "customer_distinct_devices_30d", "amount_zscore", "merchant_avg_amount_90d",
         "merchant_chargeback_rate_90d", "txn_count_today_so_far", "distinct_merchants_today",
         "seconds_since_last_txn", "txn_count_last_10min", "txn_count_last_60min",
-        "is_new_device", "is_new_location", "has_sufficient_history",
+        "recent_failed_count_15min", "is_new_device", "is_new_location", "is_first_time_at_merchant",
+        "last_location_id", "last_location_lat", "last_location_lon", "last_txn_ts_any",
+        "current_location_lat", "current_location_lon", "txns_at_this_hour", "total_prior_txns",
+        "has_sufficient_history",
     }
     assert set(feats.keys()) == expected_keys
 
