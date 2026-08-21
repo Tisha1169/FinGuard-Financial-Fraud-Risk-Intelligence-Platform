@@ -121,6 +121,18 @@ def test_threshold_sweep_returns_one_row_per_distinct_threshold():
     assert "net_expected_impact_usd" in sweep.columns
 
 
+def test_best_threshold_by_net_impact_picks_the_max_row():
+    from risk_scoring.exposure import best_threshold_by_net_impact
+
+    sweep = pd.DataFrame({
+        "threshold": [0.9, 0.5, 0.1],
+        "net_expected_impact_usd": [100.0, 500.0, -200.0],
+    })
+    best = best_threshold_by_net_impact(sweep)
+    assert best["threshold"] == 0.5
+    assert best["net_expected_impact_usd"] == 500.0
+
+
 # ---------------------------------------------------------------------------
 # Integration tests: real data
 # ---------------------------------------------------------------------------

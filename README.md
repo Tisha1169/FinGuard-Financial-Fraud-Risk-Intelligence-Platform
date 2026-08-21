@@ -1,6 +1,6 @@
 # FinGuard — Financial Fraud & Risk Intelligence Platform
 
-> Status: **Phase 10 — Streamlit analyst console.** Not yet resume-ready.
+> Status: **Phase 11 — testing & validation pass.** Not yet resume-ready.
 > See [docs/architecture.md](docs/architecture.md) for the full design.
 
 FinGuard simulates a bank/fintech fraud operations platform end to end:
@@ -94,7 +94,9 @@ risk score, tiers, and financial exposure trade-off,
 [docs/investigation_workflow.md](docs/investigation_workflow.md) for the
 alert/case/investigator simulation and SLA metrics,
 [docs/api.md](docs/api.md) for the FastAPI endpoints, and
-[docs/dashboard.md](docs/dashboard.md) for the Streamlit analyst console.
+[docs/dashboard.md](docs/dashboard.md) for the Streamlit analyst console,
+and [docs/testing_strategy.md](docs/testing_strategy.md) for the full
+test suite (161 tests, 85% coverage) and its rationale.
 
 ## Data disclosure
 

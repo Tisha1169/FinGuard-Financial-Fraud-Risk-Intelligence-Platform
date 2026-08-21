@@ -57,6 +57,30 @@ def test_list_transactions_pagination_limit_enforced(client):
     assert resp.status_code == 422  # exceeds max limit of 500
 
 
+def test_list_transactions_filter_by_customer_id(client):
+    known_customer = client.get("/transactions?limit=1").json()["items"][0]["customer_id"]
+    resp = client.get(f"/transactions?customer_id={known_customer}&limit=50")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] > 0
+    assert all(item["customer_id"] == known_customer for item in body["items"])
+
+
+def test_list_transactions_filter_by_merchant_id(client):
+    known_merchant = client.get("/transactions?limit=1").json()["items"][0]["merchant_id"]
+    resp = client.get(f"/transactions?merchant_id={known_merchant}&limit=50")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert all(item["merchant_id"] == known_merchant for item in body["items"])
+
+
+def test_list_transactions_filter_by_min_amount(client):
+    resp = client.get("/transactions?min_amount=100&limit=50")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert all(item["amount"] >= 100 for item in body["items"])
+
+
 def test_list_alerts_only_high_and_critical(client):
     resp = client.get("/alerts?limit=50")
     assert resp.status_code == 200
@@ -81,6 +105,35 @@ def test_list_cases_filter_by_status(client):
     resp = client.get("/cases?status=CLOSED&limit=10")
     body = resp.json()
     assert all(item["status"] == "CLOSED" for item in body["items"])
+
+
+def test_list_cases_filter_by_assigned_investigator(client):
+    known = client.get("/cases?status=CLOSED&limit=1").json()["items"][0]["assigned_investigator"]
+    resp = client.get(f"/cases?assigned_investigator={known}&limit=20")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert all(item["assigned_investigator"] == known for item in body["items"])
+
+
+def test_list_alerts_filter_by_dedup_group_id(client):
+    with_dedup = None
+    for item in client.get("/alerts?limit=200").json()["items"]:
+        if item["dedup_group_id"]:
+            with_dedup = item["dedup_group_id"]
+            break
+    if with_dedup is None:
+        pytest.skip("no alert with a dedup_group_id in the current dataset")
+    resp = client.get(f"/alerts?dedup_group_id={with_dedup}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert all(item["dedup_group_id"] == with_dedup for item in body["items"])
+
+
+def test_list_alerts_filter_by_case_status(client):
+    resp = client.get("/alerts?case_status=CLOSED&limit=20")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert all(item["case_status"] == "CLOSED" for item in body["items"])
 
 
 def test_get_case_detail_has_all_sections(client):
