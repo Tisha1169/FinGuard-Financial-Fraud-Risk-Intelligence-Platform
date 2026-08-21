@@ -1,20 +1,25 @@
 # Deployment
 
-## Local
-`docker compose up -d` starts Postgres. Run `python scripts/init_db.py` to
-apply the schema, then run the Streamlit app / API locally against
-`DATABASE_URL` in `.env`.
+Full deployment guide (Neon + Streamlit Community Cloud, step-by-step,
+readiness checks, troubleshooting): see [docs/deployment.md](../docs/deployment.md).
+
+## Local (quick reference)
+
+```bash
+docker compose up -d
+python scripts/init_db.py
+python scripts/generate_data.py && python scripts/load_data.py
+python scripts/compute_features.py
+python scripts/run_rules.py
+python scripts/run_statistical_detection.py
+python scripts/run_risk_scoring.py
+python scripts/run_investigation_workflow.py
+streamlit run streamlit_app/app.py
+```
 
 ## Production
-- **Database:** Neon PostgreSQL (serverless Postgres, free tier). Create a
-  project, copy the pooled connection string into Streamlit Community
-  Cloud's app secrets as `DATABASE_URL`.
-- **App:** Streamlit Community Cloud, pointed at this repo's
-  `streamlit_app/app.py` (added in Phase 10). Secrets are configured in the
-  Streamlit Cloud dashboard, never committed.
-- No separate API deployment: Streamlit talks to Neon directly in
-  production. FastAPI (added in Phase 9) is developed and tested locally as
-  an architectural layer, documented but not separately hosted.
 
-Full deployment steps and a dataset-sizing plan for Neon's free tier will
-be finalized in Phase 14 (`docs/deployment.md`).
+Neon PostgreSQL + Streamlit Community Cloud. Streamlit talks to Neon
+directly - no separate API hosting (see `docs/architecture.md`'s
+deployment note). Account setup and secrets configuration are covered in
+`docs/deployment.md`.

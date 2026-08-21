@@ -1,7 +1,9 @@
 # FinGuard — Financial Fraud & Risk Intelligence Platform
 
-> Status: **Phase 11 — testing & validation pass.** Not yet resume-ready.
-> See [docs/architecture.md](docs/architecture.md) for the full design.
+> Status: **Phase 14 prep — deployment readiness verified, live deployment
+> pending your Neon/Streamlit Cloud accounts.** Not yet resume-ready. See
+> [docs/architecture.md](docs/architecture.md) for the full design and
+> [docs/deployment.md](docs/deployment.md) for exact next steps.
 
 FinGuard simulates a bank/fintech fraud operations platform end to end:
 transaction ingestion → hybrid detection (rules + statistics + ML) → a
@@ -95,8 +97,10 @@ risk score, tiers, and financial exposure trade-off,
 alert/case/investigator simulation and SLA metrics,
 [docs/api.md](docs/api.md) for the FastAPI endpoints, and
 [docs/dashboard.md](docs/dashboard.md) for the Streamlit analyst console,
-and [docs/testing_strategy.md](docs/testing_strategy.md) for the full
-test suite (161 tests, 85% coverage) and its rationale.
+[docs/testing_strategy.md](docs/testing_strategy.md) for the full
+test suite (161 tests, 85% coverage) and its rationale, and
+[docs/deployment.md](docs/deployment.md) for the Neon + Streamlit
+Community Cloud deployment guide.
 
 ## Data disclosure
 
