@@ -1,0 +1,24 @@
+{
+  "customers": 1000,
+  "merchants": 150,
+  "devices": 1866,
+  "locations": 25,
+  "transactions": 103651,
+  "fraud_transactions": 2115,
+  "fraud_rate": 0.0204,
+  "typology_counts": {
+    "FAILED_THEN_LARGE": 294,
+    "ACCOUNT_TAKEOVER": 251,
+    "CARD_TESTING": 234,
+    "UNUSUAL_AMOUNT": 226,
+    "MERCHANT_BEHAVIOR_DEVIATION": 226,
+    "DEVICE_ANOMALY": 226,
+    "GEOGRAPHIC_INCONSISTENCY": 226,
+    "UNUSUAL_TIME_OF_DAY": 226,
+    "VELOCITY_ABUSE": 206
+  },
+  "date_range": [
+    "2026-04-23 00:11:15",
+    "2026-08-21 08:19:57"
+  ]
+}

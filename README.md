@@ -1,8 +1,7 @@
 # FinGuard — Financial Fraud & Risk Intelligence Platform
 
-> Status: **Phase 1 — repository, environment, database schema.** Not yet
-> resume-ready. See [docs/architecture.md](docs/architecture.md) for the
-> full design.
+> Status: **Phase 2 — synthetic data generation.** Not yet resume-ready.
+> See [docs/architecture.md](docs/architecture.md) for the full design.
 
 FinGuard simulates a bank/fintech fraud operations platform end to end:
 transaction ingestion → hybrid detection (rules + statistics + ML) → a
@@ -69,7 +68,12 @@ docker compose up -d
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python scripts/init_db.py
+python scripts/generate_data.py   # writes data/*.parquet
+python scripts/load_data.py       # loads them into DATABASE_URL
 ```
+
+See [docs/data_generation.md](docs/data_generation.md) for how the
+synthetic dataset and its 9 fraud typologies are constructed.
 
 ## Data disclosure
 

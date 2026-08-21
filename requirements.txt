@@ -16,5 +16,6 @@ plotly==6.9.0
 fastapi==0.141.1
 uvicorn==0.52.4
 Faker==40.36.0
+pyarrow==18.1.0
 pytest==9.1.1
 pytest-cov==7.1.0
